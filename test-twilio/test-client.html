@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Twilio Client Test</title>
+    <script type="text/javascript" src="//sdk.twilio.com/js/client/releases/1.13.0/twilio.min.js"></script>
+    <script type="text/javascript">
+        let device;
+        
+        async function setup() {
+            try {
+                const response = await fetch('http://localhost:5008/api/token');
+                const data = await response.json();
+                
+                device = new Twilio.Device(data.token);
+                
+                device.on('ready', function() {
+                    document.getElementById('status').textContent = 'Ready to make calls';
+                    document.getElementById('call-button').disabled = false;
+                });
+                
+                device.on('error', function(error) {
+                    document.getElementById('status').textContent = 'Error: ' + error.message;
+                });
+            } catch (error) {
+                console.error('Setup error:', error);
+            }
+        }
+        
+        function makeCall() {
+            try {
+                const params = {
+                    To: '+639568513053',  // Use one of your verified numbers from VERIFIED_PHONE_NUMBERS
+                    From: 'client:test-user'
+                };
+                
+                console.log('Making call with params:', params);
+                
+                if (!device) {
+                    throw new Error('Device not initialized');
+                }
+
+                const connection = device.connect(params);
+                
+                connection.on('ringing', () => {
+                    console.log('Ringing...');
+                    document.getElementById('status').textContent = 'Ringing...';
+                });
+
+                connection.on('accept', () => {
+                    console.log('Call accepted');
+                    document.getElementById('status').textContent = 'Call in progress';
+                });
+
+                connection.on('error', (error) => {
+                    console.error('Connection error:', error);
+                    document.getElementById('status').textContent = 'Error: ' + error.message;
+                });
+
+                connection.on('disconnect', () => {
+                    console.log('Call ended');
+                    document.getElementById('status').textContent = 'Call ended';
+                });
+
+            } catch (error) {
+                console.error('Make call error:', error);
+                document.getElementById('status').textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        window.onload = setup;
+    </script>
+</head>
+<body>
+    <h1>Twilio Client Test</h1>
+    <p id="status">Setting up...</p>
+    <button id="call-button" onclick="makeCall()" disabled>Call Twilio Number</button>
+</body>
+</html>
